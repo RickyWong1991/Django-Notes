@@ -1,0 +1,76 @@
+一，创建一个表单 
+创建一个Form表单有两种方式： 
+第一种方式是继承于forms.Form，的一个子类，通过在form中选择你需要的类型来规定表单之 
+中字段的类型 
+
+Java代码  收藏代码
+class ContactForm(forms.Form):  
+    subject = forms.CharField(max_length=100)  
+    message = forms.CharField(required=False）  
+
+
+其中 django 内置了很多的字段，让开发者可以直接使用，并且内置了这些字段的检验使站点中的表单数据检测变得方便，也提供了一些可选择的检验规则如required=False等，具体的可以去Django 官网查询API。 
+
+第二种 是直接利用数据库中以有的表来生成表单项， 这对于一个管理系统类型的网站 比较有用，因为如果一个站点有大量的实体数据需要让用户输入，那么就不必重新花费时间来定义表单，只需要直接的和 model 进行关联就可以了如： 
+
+
+class BookForm(ModelForm):  
+    class Meta:  
+        model = Book  
+
+
+这样就可以 直接将 book 中的所有字段 直接生成一张 与之对应的表单，也许你不想所有的模型中的字段用户都可以填写，那么你可以用 
+
+class Meta:  
+        model = Author  
+        fields = ('name', 'title')  
+class Meta:  
+        model = Author  
+        exclude = ('birth_date',)  
+
+
+exclude 属性来规定哪些字段你不想加入在表单之中。 
+fields属性来规定哪些你要加入表单之中，当然两个属性，你只要设定一个就可以了 
+
+二，修饰这个表单 
+因为用django自动生成的表单，实现的内容很多是你不想要的，所以要创造一个独特的表。 
+
+改变字段在模板中显示的类型 
+你继承于ModelForm来创建一个表单的话，Django会自动的将外键字段转化成一个select的控件，并且通过下拉框来选择一个值，这可能是你不想要的，因为你可能不希望用户来填写外键的内容，这些外键的内容是系统自动关联分配的，所以，你就必须更改表单项的实现方式。 
+
+model = Author  
+        fields = ('name', 'title', 'birth_date')  
+        widgets = {  
+            'name': Textarea(attrs={'cols': 80, 'rows': 20}),  
+        }  
+
+
+通过widgets这个参数，手动的设定字段以何种input类型显示 
+更改报错信息 
+在django表单系统之中，如果在处理表中中 使用 is_valid()  
+方法并且表单检测发现表单内容不符合规则，那么他将返回一个表单，表单之中没一样中 form.name.errors 就是报错信息，虽然现在在服务器端检验表单字段的实用价值已经越来越小了，但是 俗话说， 永远不要相信前台脚本，永远不要相信用户，他们很可能利用你没有后台检验的功能而 搞出很多的事情来，所以尽管前台已经做了检验，但是后台仍然要做一次检验，更改默认的报错信息是这样的 
+
+
+name = forms.CharField(error_messages={'required': 'Please enter your name'})  
+
+
+在创建这个 表单的时段的时候 传入如下的参数，就可以修改报错信息，当然你必须知道具体错误的名称 如“requeired”这些名称可以在API 中找到 
+三，使用这个表单 
+在视图中使用 
+在视图中使用一个表单 无非是两种功能，一个是创建一个表单让用户来填写信息，另一个是处理表单中的数据。 
+创建一个表单 就是直接创建一个 实体表单的对象 
+form = ContactForm()，里面有几个比较重要的参数：auto_id=False 
+这个参数 主要是表示 是否在表单中生成 id ，因为有的时候你不想让你每个表单的字段都对应一个id， 如果生成 默认id是 id_form字段名字. 
+设置默认值 
+可以在创建 表单对象时传入如下参数initial={} 
+这是一个字典参数，对应每个字段的默认值， 可以在定义表的时候在没定义一个时段 中添加 initial='http://' 来设定默认值 
+更新数据 
+你可能需要 用一个 model实例来初始化他，这样就可以达到表单更新数据 
+f = ArticleForm(instance=a) 其中 a 是article 的一个model实例。 
+
+提取数据 
+
+在 处理 post 请求时候， 通过 f = ArticleForm(request.POST)来获取一个填有用户数据的form 
+在调用了 is_valid 方法以后 就可以通过 f.cleaned_data ，返回一个 装有数据的字典 
+总结： 
+上面直接 介绍很少的 form 的功能，只是让大家了解一下 django form，具体的要去官方API介绍还可以，英文也比较好理解，就我对 django表单而言， 我认为它是方便好用的，但是尽量大家不要过分的依赖django所提供的功能，尽管他提供了 强大的功能，很多事情还是要一步一步来，过分的依赖 它提供的功能，会造成你整个的系统变得非常不灵活。 
